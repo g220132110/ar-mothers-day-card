@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR 測試版 - 母親節卡片</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+        #loading.hidden {
+            display: none;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #ff69b4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #error {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        #error.show {
+            display: flex;
+        }
+        #instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,105,180,0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 999;
+            text-align: center;
+            max-width: 80%;
+        }
+        #debug {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 998;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="loader"></div>
+        <p>正在初始化相機...</p>
+        <p style="font-size: 14px;">請允許相機權限</p>
+    </div>
+
+    <div id="error">
+        <h2>❌ 載入失敗</h2>
+        <p id="errorMessage"></p>
+        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #ff69b4; color: white; border: none; border-radius: 5px; font-size: 16px;">重新載入</button>
+    </div>
+
+    <div id="instructions">
+        📷 測試版：檢查相機功能
+    </div>
+
+    <div id="debug"></div>
+
+    <a-scene 
+        mindar-image="autoStart: true; uiLoading: no; uiError: no; uiScanning: no;"
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
+        
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- 測試內容：簡單的 3D 文字 -->
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-text 
+                value="AR 測試成功！\n相機正常運作\n\n❤️ 母親節快樂 ❤️" 
+                position="0 0 0" 
+                align="center" 
+                color="#FF1493"
+                width="2"
+                wrap-count="20">
+            </a-text>
+            
+            <!-- 旋轉的愛心 -->
+            <a-sphere 
+                position="0 0.5 0" 
+                radius="0.15" 
+                color="#FF69B4"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000">
+            </a-sphere>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        const debugLog = document.getElementById('debug');
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function log(message) {
+            console.log(message);
+            const time = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${time}] ${message}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorEl.classList.add('show');
+            loadingEl.classList.add('hidden');
+        }
+
+        log('開始載入 AR...');
+
+        // 檢查瀏覽器支援
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError('此瀏覽器不支援相機功能。請使用 Chrome 或 Safari。');
+            log('錯誤: 瀏覽器不支援 getUserMedia');
+        }
+
+        // 請求相機權限
+        log('請求相機權限...');
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+                log('✓ 相機權限已授予');
+                stream.getTracks().forEach(track => track.stop());
+            })
+            .catch(err => {
+                log('✗ 相機權限被拒絕: ' + err.message);
+                showError('相機權限被拒絕。請在瀏覽器設定中允許此網站使用相機。');
+            });
+
+        // MindAR 事件監聽
+        const sceneEl = document.querySelector('a-scene');
+        
+        sceneEl.addEventListener('loaded', function () {
+            log('A-Frame 場景已載入');
+        });
+
+        sceneEl.addEventListener('renderstart', function () {
+            log('開始渲染');
+            loadingEl.classList.add('hidden');
+        });
+
+        // AR Ready
+        sceneEl.addEventListener('arReady', () => {
+            log('✓ AR 系統就緒');
+            loadingEl.classList.add('hidden');
+        });
+
+        // AR Error
+        sceneEl.addEventListener('arError', (event) => {
+            log('✗ AR 錯誤: ' + event.detail.error);
+            showError('AR 初始化失敗：' + event.detail.error);
+        });
+
+        // 檢查 targets.mind
+        fetch('./targets.mind')
+            .then(response => {
+                if (response.ok) {
+                    log('✓ targets.mind 檔案存在');
+                } else {
+                    log('✗ 找不到 targets.mind 檔案');
+                    showError('缺少 targets.mind 檔案。請先生成 AR 標記檔案。\n\n1. 前往 https://hiukim.github.io/mind-ar-js-doc/tools/compile\n2. 上傳標記圖片\n3. 下載 targets.mind\n4. 上傳到 GitHub');
+                }
+            })
+            .catch(err => {
+                log('✗ 無法檢查 targets.mind: ' + err.message);
+            });
+
+        // 標記找到/失去事件
+        const target = document.querySelector('[mindar-image-target]');
+        
+        if (target) {
+            target.addEventListener('targetFound', event => {
+                log('✓ 找到標記圖片！');
+            });
+
+            target.addEventListener('targetLost', event => {
+                log('失去標記圖片');
+            });
+        }
+
+        // 超時檢查
+        setTimeout(() => {
+            if (!loadingEl.classList.contains('hidden')) {
+                log('載入超時');
+                showError('載入時間過長。可能的原因：\n1. 網路連線不穩定\n2. 缺少 targets.mind 檔案\n3. 相機權限問題');
+            }
+        }, 15000);
+    </script>
+</body>
+</html>
