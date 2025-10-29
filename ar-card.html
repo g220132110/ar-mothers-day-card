@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>母親節 AR 卡片</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+        #loading.hidden {
+            display: none;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #ff69b4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,105,180,0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 999;
+            text-align: center;
+            max-width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="loader"></div>
+        <p>正在載入 AR 體驗...</p>
+        <p style="font-size: 12px;">請允許相機權限</p>
+    </div>
+
+    <div id="instructions">
+        📷 將相機對準卡片上的圖片
+    </div>
+
+    <a-scene 
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiError: no; uiScanning: no;"
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
+        
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- AR 內容顯示在這裡 -->
+        <a-entity mindar-image-target="targetIndex: 0">
+            
+            <!-- 影片播放器 -->
+            <a-video 
+                src="#video" 
+                position="0 0 0" 
+                rotation="0 0 0"
+                width="1.6" 
+                height="0.9"
+                class="clickable">
+            </a-video>
+
+            <!-- 點擊提示 -->
+            <a-text 
+                value="點擊播放影片" 
+                position="0 -0.6 0" 
+                align="center" 
+                color="#FF69B4"
+                width="2">
+            </a-text>
+
+            <!-- 愛心裝飾 -->
+            <a-sphere 
+                position="-0.9 0.6 0" 
+                radius="0.1" 
+                color="#FF1493"
+                animation="property: position; to: -0.9 0.8 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
+            </a-sphere>
+            <a-sphere 
+                position="0.9 0.6 0" 
+                radius="0.1" 
+                color="#FF69B4"
+                animation="property: position; to: 0.9 0.8 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate; delay: 500">
+            </a-sphere>
+
+        </a-entity>
+
+        <!-- 影片素材 -->
+        <a-assets>
+            <video 
+                id="video" 
+                src="./video.mp4"
+                preload="auto" 
+                crossorigin="anonymous"
+                playsinline
+                webkit-playsinline>
+            </video>
+        </a-assets>
+    </a-scene>
+
+    <script>
+        // 隱藏載入畫面
+        document.querySelector('a-scene').addEventListener('loaded', function () {
+            document.getElementById('loading').classList.add('hidden');
+        });
+
+        // 點擊影片播放/暫停
+        document.querySelector('a-video').addEventListener('click', function() {
+            const video = document.getElementById('video');
+            if (video.paused) {
+                video.play();
+                console.log('影片播放中');
+            } else {
+                video.pause();
+                console.log('影片暫停');
+            }
+        });
+
+        // 當偵測到標記時自動播放
+        const sceneEl = document.querySelector('a-scene');
+        const target = document.querySelector('[mindar-image-target]');
+        
+        target.addEventListener('targetFound', event => {
+            console.log('找到標記圖片！');
+            document.getElementById('video').play();
+        });
+
+        target.addEventListener('targetLost', event => {
+            console.log('失去標記圖片');
+            document.getElementById('video').pause();
+        });
+
+        // 錯誤處理
+        document.getElementById('video').addEventListener('error', function(e) {
+            console.error('影片載入錯誤:', e);
+            alert('影片載入失敗，請確認 video.mp4 檔案存在');
+        });
+    </script>
+</body>
+</html>
